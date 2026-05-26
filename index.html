@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>작업장 순회 점검표 | 부민병원</title>
+
+<!-- PWA / 모바일 홈화면 추가 최적화 -->
+<meta name="theme-color" content="#1B2A4A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="순회점검">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%231B2A4A'/><text x='90' y='118' text-anchor='middle' font-size='90' fill='%234C6EF5'>🏥</text></svg>">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231B2A4A'/><text x='32' y='44' text-anchor='middle' font-size='34' fill='%234C6EF5'>🏥</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+:root {
+  --navy:#1B2A4A; --blue:#3B5BDB; --blue-light:#4C6EF5; --blue-pale:#EEF2FF;
+  --green:#2F9E44; --green-pale:#EBFBEE; --amber:#E67700; --amber-pale:#FFF9DB;
+  --red:#C92A2A; --red-pale:#FFF5F5;
+  --gray-900:#1a1a2e; --gray-700:#374151; --gray-500:#6B7280;
+  --gray-400:#9CA3AF; --gray-200:#E5E7EB; --gray-100:#F3F4F6; --gray-50:#F9FAFB;
+  --white:#FFFFFF; --border:#E5E7EB;
+  --radius:8px; --radius-lg:12px;
+  --shadow:0 1px 3px rgba(0,0,0,0.08); --shadow-md:0 4px 16px rgba(0,0,0,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans KR',sans-serif;background:#F0F2F8;color:var(--gray-900);font-size:14px;min-height:100vh;padding-bottom:env(safe-area-inset-bottom);}
+input,select,button,textarea{font-size:16px;}  /* iOS 자동 확대 방지 */
+
+.header{background:var(--navy);padding:env(safe-area-inset-top) 20px 0;height:calc(54px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.25);}
+.header-left{display:flex;align-items:center;gap:10px;}
+.header-logo{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.header-title{color:#fff;font-size:15px;font-weight:600;}
+.header-sub{color:rgba(255,255,255,0.5);font-size:11px;margin-left:6px;}
+.dept-select{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:6px 10px;font-size:13px;font-family:'Noto Sans KR',sans-serif;cursor:pointer;outline:none;}
+.dept-select option{background:var(--navy);}
+
+.tabs{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 20px;position:sticky;top:calc(54px + env(safe-area-inset-top));z-index:90;box-shadow:var(--shadow);}
+.tab{padding:12px 16px;font-size:13px;font-weight:500;color:var(--gray-500);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.tab:hover:not(.active){color:var(--gray-700);}
+
+.main{max-width:860px;margin:0 auto;padding:20px 16px 80px;}
+
+.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.meta-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow);}
+.meta-label{font-size:10px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;}
+.meta-card input{width:100%;border:none;outline:none;font-size:13px;font-weight:500;font-family:'Noto Sans KR',sans-serif;color:var(--gray-900);background:transparent;}
+
+.section{margin-bottom:12px;}
+.section-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--navy);color:#fff;font-size:12px;font-weight:600;letter-spacing:0.5px;border-radius:var(--radius) var(--radius) 0 0;}
+.check-wrap{background:var(--white);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+.check-row{display:grid;grid-template-columns:1fr 160px 1fr;border-bottom:1px solid var(--gray-100);transition:background 0.1s;}
+.check-row:last-child{border-bottom:none;}
+.check-row:hover{background:var(--gray-50);}
+.check-q{padding:10px 14px;font-size:12.5px;color:var(--gray-700);line-height:1.5;display:flex;align-items:center;}
+.check-btns{padding:8px 10px;display:flex;align-items:center;gap:4px;border-left:1px solid var(--gray-100);border-right:1px solid var(--gray-100);}
+.cbtn{flex:1;padding:5px 4px;font-size:11px;font-weight:500;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--gray-50);color:var(--gray-500);font-family:'Noto Sans KR',sans-serif;transition:all 0.12s;text-align:center;}
+.cbtn.good.sel{background:var(--green-pale);border-color:var(--green);color:var(--green);}
+.cbtn.impr.sel{background:var(--amber-pale);border-color:var(--amber);color:var(--amber);}
+.cbtn.na.sel{background:var(--red-pale);border-color:var(--red);color:var(--red);}
+.check-note{padding:8px 10px;display:flex;align-items:center;}
+.check-note input{width:100%;border:1px solid transparent;border-radius:6px;padding:5px 8px;font-size:12px;font-family:'Noto Sans KR',sans-serif;color:var(--gray-700);background:transparent;outline:none;transition:all 0.12s;}
+.check-note input:focus{border-color:var(--blue-light);background:var(--blue-pale);}
+.check-note input::placeholder{color:var(--gray-400);}
+
+.sig-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-top:16px;box-shadow:var(--shadow);}
+.sig-title{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:14px;}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.sig-box{border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.sig-box-label{font-size:10px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;}
+.sig-box-name{font-size:13px;font-weight:600;color:var(--gray-900);margin-bottom:8px;min-height:18px;}
+.sig-canvas-wrap{border:1.5px dashed var(--gray-200);border-radius:6px;background:var(--gray-50);}
+.sig-canvas{display:block;width:100%;height:90px;cursor:crosshair;touch-action:none;border-radius:6px;}
+.sig-btns{display:flex;gap:6px;margin-top:7px;}
+.sig-btn{font-size:11px;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;border:1px solid var(--border);background:var(--gray-50);color:var(--gray-500);}
+.sig-status{font-size:11px;color:var(--green);margin-top:4px;height:14px;font-weight:500;}
+
+.action-bar{display:flex;gap:8px;margin-top:16px;}
+.btn{flex:1;padding:12px;border-radius:var(--radius);border:none;font-size:13px;font-weight:600;font-family:'Noto Sans KR',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s;}
+.btn-save{background:var(--gray-100);color:var(--gray-700);border:1px solid var(--border);}
+.btn-submit{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(59,91,219,0.35);}
+.btn-submit:hover{background:var(--blue-light);}
+.btn-submit:disabled{opacity:0.6;cursor:not-allowed;}
+
+.hist-list{display:flex;flex-direction:column;gap:8px;}
+.hist-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;box-shadow:var(--shadow);transition:all 0.12s;}
+.hist-card:hover{border-color:var(--blue-light);}
+.hist-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.hist-dept{font-size:14px;font-weight:600;}
+.hist-date{font-size:12px;color:var(--gray-500);}
+.hist-badges{display:flex;gap:6px;flex-wrap:wrap;}
+.badge{font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px;}
+.badge.g{background:var(--green-pale);color:var(--green);}
+.badge.i{background:var(--amber-pale);color:var(--amber);}
+.badge.n{background:var(--red-pale);color:var(--red);}
+.badge.d{background:var(--gray-100);color:var(--gray-500);}
+
+.stats-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;box-shadow:var(--shadow);}
+.stat-val{font-size:28px;font-weight:700;}
+.stat-val.g{color:var(--green);}
+.stat-val.i{color:var(--amber);}
+.stat-val.n{color:var(--red);}
+.stat-lbl{font-size:11px;color:var(--gray-400);margin-top:2px;}
+.dept-stat{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;}
+.dept-stat-top{display:flex;justify-content:space-between;margin-bottom:6px;}
+.dept-stat-name{font-size:13px;font-weight:600;}
+.dept-stat-pct{font-size:12px;color:var(--gray-500);font-weight:600;}
+.bar-bg{height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden;margin-bottom:4px;}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-light));border-radius:3px;}
+.dept-stat-sub{font-size:11px;color:var(--gray-400);}
+
+.empty{text-align:center;padding:50px 20px;color:var(--gray-400);}
+.empty-icon{font-size:42px;margin-bottom:10px;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:500;z-index:999;transition:transform 0.3s ease;pointer-events:none;white-space:nowrap;box-shadow:var(--shadow-md);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+@media (max-width: 600px) {
+  .header { padding: 0 12px; height: 50px; }
+  .header-title { font-size: 13px; }
+  .header-sub { display: none; }
+  .dept-select { font-size: 12px; padding: 5px 8px; max-width: 130px; }
+  .tabs { padding: 0 10px; }
+  .tab { padding: 10px 10px; font-size: 12px; }
+  .main { padding: 12px 10px 80px; }
+  .meta-grid { grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+  .meta-card { padding: 8px 10px; }
+  .meta-label { font-size: 9px; }
+  .meta-card input { font-size: 12px; }
+  .section-header { font-size: 11px; padding: 7px 10px; }
+  .check-row { grid-template-columns: 1fr; }
+  .check-q { padding: 10px 10px 4px; font-size: 12px; }
+  .check-btns { border-left: none; border-right: none; border-top: 1px solid var(--gray-100); padding: 6px 10px; }
+  .cbtn { padding: 6px 4px; font-size: 12px; }
+  .check-note { padding: 4px 10px 8px; }
+  .check-note input { font-size: 12px; border: 1px solid var(--gray-200); background: var(--gray-50); }
+  .sig-grid { grid-template-columns: 1fr; gap: 10px; }
+  .sig-canvas { height: 120px; }
+  .action-bar { flex-direction: column; gap: 8px; position:sticky; bottom:0; background:#F0F2F8; padding:10px 0 calc(10px + env(safe-area-inset-bottom)); margin-top:16px; z-index:50;}
+  .btn { padding: 16px; font-size: 15px; min-height:48px; }
+  .cbtn { min-height:38px; }
+  .stats-cards { grid-template-columns: repeat(2, 1fr); }
+  .hist-top { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="header-logo">🏥</div>
+    <span class="header-title">작업장 순회 점검표</span>
+    <span class="header-sub">부민병원</span>
+  </div>
+  <select class="dept-select" id="deptSel" onchange="changeDept()">
+    <option>수술실·회복실</option>
+    <option>공급실</option>
+    <option>내시경실</option>
+    <option>특수치료내시경실</option>
+    <option>인터벤션센터</option>
+    <option>진단검사의학실</option>
+    <option>병리과</option>
+    <option>시설관리팀</option>
+    <option>영양팀</option>
+    <option>미화부</option>
+    <option>주차팀</option>
+  </select>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-check" onclick="switchTab('check')">📋 점검</div>
+  <div class="tab" id="tab-hist" onclick="switchTab('hist')">📁 이력</div>
+  <div class="tab" id="tab-stat" onclick="switchTab('stat')">📊 통계</div>
+</div>
+
+<div class="main">
+  <div id="view-check">
+    <div class="meta-grid">
+      <div class="meta-card"><div class="meta-label">부서</div><input type="text" id="inDept" readonly></div>
+      <div class="meta-card"><div class="meta-label">점검일</div><input type="date" id="inDate"></div>
+      <div class="meta-card"><div class="meta-label">관리감독자</div><input type="text" id="inManager" placeholder="이름" oninput="updateSigName('Manager')"></div>
+      <div class="meta-card"><div class="meta-label">검사자</div><input type="text" id="inInspector" placeholder="이름" oninput="updateSigName('Inspector')"></div>
+    </div>
+    <div id="checkSections"></div>
+    <div class="sig-section">
+      <div class="sig-title">✍️ 서명란</div>
+      <div class="sig-grid">
+        <div class="sig-box">
+          <div class="sig-box-label">관리감독자</div>
+          <div class="sig-box-name" id="sigNameManager">—</div>
+          <div class="sig-canvas-wrap"><canvas class="sig-canvas" id="sigManager"></canvas></div>
+          <div class="sig-btns"><button class="sig-btn" onclick="clearSig('Manager')">지우기</button></div>
+          <div class="sig-status" id="sigStatusManager"></div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-box-label">검사자</div>
+          <div class="sig-box-name" id="sigNameInspector">—</div>
+          <div class="sig-canvas-wrap"><canvas class="sig-canvas" id="sigInspector"></canvas></div>
+          <div class="sig-btns"><button class="sig-btn" onclick="clearSig('Inspector')">지우기</button></div>
+          <div class="sig-status" id="sigStatusInspector"></div>
+        </div>
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-save" onclick="saveRecord()">💾 저장</button>
+      <button class="btn btn-submit" id="submitBtn" onclick="submitReport()">📤 제출하기</button>
+    </div>
+  </div>
+  <div id="view-hist" style="display:none;"><div class="hist-list" id="histList"></div></div>
+  <div id="view-stat" style="display:none;">
+    <div class="stats-cards" id="statsCards"></div>
+    <div id="deptStats"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var CHECKS = [
+  { cat: '작업장 일반', icon: '🏢', items: [
+    '작업장 바닥은 견고하며 미끄럽거나 턱진 곳은 없는가?',
+    '중량물의 저장과 적재가 안전하고 주의사항이 잘 부착되어져 있는가?',
+    '위험구역에는 위험 경고표시 및 접근방지 표시가 잘 부착되어 있는가?',
+    '작업장의 통로는 충분히 확보되어 있으며, 통로나 계단에 작업자가 충돌할 위험이 있는 설비나 자재 등이 놓여 있지 않은가?'
+  ]},
+  { cat: '건강관리', icon: '🩺', items: [
+    '건강진단 및 작업환경측정은 주기적으로 실시되고 있는가?',
+    '질병유소견자에 대한 작업전환 등 사후관리는 적절한가?'
+  ]},
+  { cat: '작업환경', icon: '🌡️', items: [
+    '작업장의 조명은 충분한가?',
+    '작업실의 실내온도 및 통풍은 알맞게 유지되고 있는가?'
+  ]},
+  { cat: '유해위험물', icon: '⚗️', items: [
+    '유해화학물질의 신규 또는 변경사항이 있는가?',
+    '물질안전보건자료(MSDS)가 게시되어 있고 이를 숙지하고 있는가?',
+    '작업장에 대한 국소배기 및 환기시설은 충분한가?',
+    '유해물질을 지정된 장소에 보관하고 보관상태는 양호한가? (케미컬보관장)',
+    '__PROTECTION__',
+    '인화성물질 등 유해화학물질의 취급장소 근처에 점화원은 있지 않은가?',
+    'Spill kit 및 EYE wash가 구비되어져 있는가?'
+  ]},
+  { cat: '기계·기구', icon: '⚙️', items: [
+    '근로자와 작업장의 위험요인 및 기계·설비가 있는가?',
+    '법정 검사는 주기적으로 실시되고 있는가?'
+  ]},
+  { cat: '전기', icon: '⚡', items: [
+    '젖은 손으로 전기설비·전기 취급하고 있지는 않은가?'
+  ]},
+  { cat: '기타', icon: '📌', items: [
+    '안전교육은 정기적으로 실시되고 있는가?',
+    '기타 근로자에 유해위험을 미칠 수 있는 것이 있는가?'
+  ]}
+];
+
+var PROTECTION = {
+  '수술실·회복실':    '작업자에게 적합한 보호구(방독면, 보호장갑, 보안경)를 제공하고 잘 착용하고 있는가?',
+  '공급실':           '작업자에게 적합한 보호구(방독면, 보호의, 보호장갑)를 제공하고 잘 착용하고 있는가?',
+  '내시경실':         '작업자에게 적합한 보호구(방독면, 보호장갑)를 제공하고 잘 착용하고 있는가?',
+  '특수치료내시경실': '작업자에게 적합한 보호구(방독면, 보호장갑)를 제공하고 잘 착용하고 있는가?',
+  '인터벤션센터':     '작업자에게 적합한 보호구(방독면, 보호장갑)를 제공하고 잘 착용하고 있는가?',
+  '진단검사의학실':   '작업자에게 적합한 보호구(방독면, 보호의, 보호장갑)를 제공하고 잘 착용하고 있는가?',
+  '병리과':           '작업자에게 적합한 보호구(방독면, 보호의, 보호장갑)를 제공하고 잘 착용하고 있는가?',
+  '시설관리팀':       '작업자에게 적합한 보호구(방독면)를 제공하고 잘 착용하고 있는가?',
+  '영양팀':           '작업자에게 적합한 보호구(방독면)를 제공하고 잘 착용하고 있는가?',
+  '미화부':           '작업자에게 적합한 보호구(마스크, 방독면, 보호의, 보호장갑)를 제공하고 잘 착용하고 있는가?',
+  '주차팀':           '작업자에게 적합한 보호구(마스크, 방독면, 보호의, 보호장갑)를 제공하고 잘 착용하고 있는가?'
+};
+
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwF23X7MKxeadWlxaqM_NjriUlAB-XsqMOAh7ER08lVta6AkYX8NnSxXUJE5bqQrDUaQw/exec';
+var EMAILJS_SERVICE  = 'service_gwzupm6';
+var EMAILJS_TEMPLATE = 'template_oidoh4k';
+var EMAILJS_KEY      = 'qNbA0-IiBtJSP3PcU';
+
+var state = {};
+var sigData = { Manager: { signed: false, url: '' }, Inspector: { signed: false, url: '' } };
+
+function showToast(msg, dur) {
+  dur = dur || 2400;
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, dur);
+}
+
+function getKey() { return document.getElementById('deptSel').value; }
+
+function init() {
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('inDate').value = today;
+  changeDept();
+  setTimeout(function() { initCanvas('Manager'); initCanvas('Inspector'); }, 200);
+}
+
+function changeDept() {
+  var k = getKey();
+  document.getElementById('inDept').value = k;
+  if (!state[k]) {
+    try {
+      var s = localStorage.getItem('wsi_' + k);
+      state[k] = s ? JSON.parse(s) : { results: {}, notes: {} };
+    } catch(e) { state[k] = { results: {}, notes: {} }; }
+  }
+  renderChecks();
+}
+
+function getProtQ(k) {
+  return PROTECTION[k] || '작업자에게 적합한 보호구(마스크, 방독면, 보호의, 보호장갑)를 제공하고 잘 착용하고 있는가?';
+}
+
+function renderChecks() {
+  var k = getKey();
+  var s = state[k];
+  var protQ = getProtQ(k);
+  var html = '';
+  for (var si = 0; si < CHECKS.length; si++) {
+    var sec = CHECKS[si];
+    html += '<div class="section"><div class="section-header"><span>' + sec.icon + '</span>' + sec.cat + '</div><div class="check-wrap">';
+    for (var qi = 0; qi < sec.items.length; qi++) {
+      var q = sec.items[qi];
+      var actualQ = (q === '__PROTECTION__') ? protQ : q;
+      var id = sec.cat + '_' + qi;
+      var v = (s.results[id]) ? s.results[id] : '';
+      var note = (s.notes[id]) ? s.notes[id].replace(/"/g, '&quot;') : '';
+      html += '<div class="check-row">';
+      html += '<div class="check-q">' + actualQ + '</div>';
+      html += '<div class="check-btns">';
+      html += '<button class="cbtn good ' + (v==='good'?'sel':'') + '" onclick="setResult(\'' + id + '\',\'good\',this)">양호</button>';
+      html += '<button class="cbtn impr ' + (v==='impr'?'sel':'') + '" onclick="setResult(\'' + id + '\',\'impr\',this)">개선</button>';
+      html += '<button class="cbtn na ' + (v==='na'?'sel':'') + '" onclick="setResult(\'' + id + '\',\'na\',this)">미해당</button>';
+      html += '</div>';
+      html += '<div class="check-note"><input type="text" placeholder="비고..." value="' + note + '" oninput="setNote(\'' + id + '\',this.value)"></div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+  document.getElementById('checkSections').innerHTML = html;
+}
+
+function setResult(id, val, btn) {
+  var k = getKey();
+  if (state[k].results[id] === val) {
+    state[k].results[id] = '';
+  } else {
+    state[k].results[id] = val;
+  }
+  var btns = btn.closest('.check-btns').querySelectorAll('.cbtn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('sel');
+  if (state[k].results[id]) btn.classList.add('sel');
+}
+
+function setNote(id, val) { state[getKey()].notes[id] = val; }
+
+function getSummary() {
+  var k = getKey();
+  var s = state[k];
+  var protQ = getProtQ(k);
+  var good = 0, impr = 0, na = 0, lines = [];
+  for (var si = 0; si < CHECKS.length; si++) {
+    var sec = CHECKS[si];
+    for (var qi = 0; qi < sec.items.length; qi++) {
+      var q = sec.items[qi];
+      var actualQ = (q === '__PROTECTION__') ? protQ : q;
+      var id = sec.cat + '_' + qi;
+      var v = s.results[id] || '';
+      var n = s.notes[id] || '';
+      if (v === 'good') good++;
+      else if (v === 'impr') impr++;
+      else if (v === 'na') na++;
+      var label = v === 'good' ? '양호' : v === 'impr' ? '개선필요' : v === 'na' ? '미해당' : '미응답';
+      lines.push('[' + sec.cat + '] ' + actualQ + ' : ' + label + (n ? ' (' + n + ')' : ''));
+    }
+  }
+  return { good: good, impr: impr, na: na, lines: lines };
+}
+
+function initCanvas(role) {
+  var canvas = document.getElementById('sig' + role);
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.offsetWidth * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.strokeStyle = '#1B2A4A';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  var drawing = false;
+
+  function getPos(e) {
+    var r = canvas.getBoundingClientRect();
+    var src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+
+  function autoSave() {
+    drawing = false;
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    var hasSign = false;
+    for (var i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) { hasSign = true; break; }
+    }
+    if (hasSign) {
+      sigData[role].signed = true;
+      sigData[role].url = canvas.toDataURL('image/png', 1.0);
+      var name = role === 'Manager'
+        ? (document.getElementById('inManager').value || '관리감독자')
+        : (document.getElementById('inInspector').value || '검사자');
+      document.getElementById('sigStatus' + role).textContent = '✓ ' + name + ' 서명됨';
+    }
+  }
+
+  canvas.addEventListener('mousedown', function(e) { drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+  canvas.addEventListener('mousemove', function(e) { if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+  canvas.addEventListener('mouseup', autoSave);
+  canvas.addEventListener('mouseleave', function() { if (drawing) autoSave(); });
+  canvas.addEventListener('touchstart', function(e) { e.preventDefault(); drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
+  canvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, { passive: false });
+  canvas.addEventListener('touchend', function(e) { e.preventDefault(); autoSave(); });
+}
+
+function clearSig(role) {
+  var canvas = document.getElementById('sig' + role);
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  sigData[role].signed = false;
+  sigData[role].url = '';
+  document.getElementById('sigStatus' + role).textContent = '';
+}
+
+function updateSigName(role) {
+  var val = role === 'Manager'
+    ? document.getElementById('inManager').value
+    : document.getElementById('inInspector').value;
+  document.getElementById('sigName' + role).textContent = val || '—';
+}
+
+function saveRecord() {
+  var k = getKey();
+  var s = state[k];
+  try { localStorage.setItem('wsi_' + k, JSON.stringify(s)); } catch(e) {}
+  var sum = getSummary();
+  var rec = {
+    dept: k,
+    date: document.getElementById('inDate').value,
+    manager: document.getElementById('inManager').value,
+    inspector: document.getElementById('inInspector').value,
+    good: sum.good, impr: sum.impr, na: sum.na,
+    results: s.results, notes: s.notes,
+    ts: Date.now()
+  };
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('wsi_records') || '[]'); } catch(e) {}
+  var idx = -1;
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].dept === k && records[i].date === rec.date) { idx = i; break; }
+  }
+  if (idx >= 0) records[idx] = rec; else records.unshift(rec);
+  localStorage.setItem('wsi_records', JSON.stringify(records.slice(0, 200)));
+  showToast('저장 완료 ✓');
+}
+
+function buildPdfHtml() {
+  var k = getKey();
+  var date = document.getElementById('inDate').value;
+  var manager = document.getElementById('inManager').value || '-';
+  var inspector = document.getElementById('inInspector').value || '-';
+  var sum = getSummary();
+  var good = sum.good, impr = sum.impr, na = sum.na;
+  var protQ = getProtQ(k);
+  var s = state[k] || { results: {}, notes: {} };
+  var nowStr = new Date().toLocaleString('ko-KR');
+
+  function getSigImg(role) {
+    var canvas = document.getElementById('sig' + role);
+    if (!canvas) return '';
+    var data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    for (var i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) return canvas.toDataURL('image/png', 1.0);
+    }
+    return '';
+  }
+
+  var sigIUrl = getSigImg('Inspector');
+  var sigMUrl = getSigImg('Manager');
+
+  function approvalCell(label, name, sigUrl) {
+    var imgHtml = sigUrl
+      ? '<img src="' + sigUrl + '" style="width:100%;max-height:56px;object-fit:contain;display:block;">'
+      : '<div style="height:56px;"></div>';
+    return '<td style="border:1.5px solid #1B2A4A;text-align:center;padding:0;width:80px;vertical-align:top;">'
+      + '<div style="background:#1B2A4A;color:#fff;font-size:9px;font-weight:700;padding:4px 0;">' + label + '</div>'
+      + '<div style="font-size:10px;font-weight:600;color:#1B2A4A;padding:3px 0;border-bottom:1px solid #E5E7EB;">' + name + '</div>'
+      + '<div style="padding:4px;min-height:56px;background:#fff;">' + imgHtml + '</div>'
+      + '</td>';
+  }
+
+  var tableRows = '';
+  for (var si = 0; si < CHECKS.length; si++) {
+    var sec = CHECKS[si];
+    tableRows += '<tr><td colspan="5" style="background:#1B2A4A;color:#fff;font-weight:700;font-size:11px;padding:6px 12px;border:1.5px solid #1B2A4A;">' + sec.cat + '</td></tr>';
+    for (var qi = 0; qi < sec.items.length; qi++) {
+      var q = sec.items[qi];
+      var actualQ = (q === '__PROTECTION__') ? protQ : q;
+      var id = sec.cat + '_' + qi;
+      var v = s.results[id] || '';
+      var note = s.notes[id] || '';
+      var bg = v === 'good' ? '#F0FFF4' : v === 'impr' ? '#FFFBEB' : v === 'na' ? '#FFF5F5' : '#ffffff';
+      var gMark = v === 'good' ? '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#2F9E44;color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;">V</span>' : '';
+      var iMark = v === 'impr' ? '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#E67700;color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;">V</span>' : '';
+      var nMark = v === 'na'   ? '<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#C92A2A;color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;">-</span>'  : '';
+      tableRows += '<tr style="background:' + bg + ';page-break-inside:avoid;">'
+        + '<td style="padding:7px 10px;font-size:10.5px;color:#374151;border:1px solid #D1D5DB;line-height:1.6;width:55%;">' + actualQ + '</td>'
+        + '<td style="text-align:center;border:1px solid #D1D5DB;width:9%;vertical-align:middle;">' + gMark + '</td>'
+        + '<td style="text-align:center;border:1px solid #D1D5DB;width:9%;vertical-align:middle;">' + iMark + '</td>'
+        + '<td style="text-align:center;border:1px solid #D1D5DB;width:9%;vertical-align:middle;">' + nMark + '</td>'
+        + '<td style="padding:7px 8px;font-size:10px;color:#6B7280;border:1px solid #D1D5DB;width:18%;">' + note + '</td>'
+        + '</tr>';
+    }
+  }
+
+  var html = '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">'
+    + '<style>'
+    + '@page{size:A4;margin:15mm 12mm;}'
+    + '*{box-sizing:border-box;margin:0;padding:0;}'
+    + 'body{font-family:Malgun Gothic,Apple SD Gothic Neo,NanumGothic,sans-serif;color:#1a1a1a;font-size:12px;background:#fff;padding:16px;}'
+    + '.dh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;border-bottom:2.5px solid #1B2A4A;padding-bottom:8px;}'
+    + '.dt h1{font-size:20px;font-weight:800;color:#1B2A4A;}'
+    + '.dt p{font-size:10px;color:#6B7280;margin-top:2px;}'
+    + '.at{border-collapse:collapse;}'
+    + '.mb{display:flex;border:1.5px solid #1B2A4A;border-radius:4px;overflow:hidden;margin-bottom:10px;}'
+    + '.mc{flex:1;padding:6px 10px;border-right:1px solid #D1D5DB;}'
+    + '.mc:last-child{border-right:none;}'
+    + '.mc .lb{font-size:8.5px;color:#6B7280;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;}'
+    + '.mc .vl{font-size:12px;font-weight:700;color:#1B2A4A;}'
+    + '.sb2{display:flex;gap:8px;margin-bottom:12px;}'
+    + '.sc{flex:1;text-align:center;padding:8px 6px;border-radius:5px;border:1.5px solid;}'
+    + '.sv{font-size:22px;font-weight:800;}'
+    + '.sl{font-size:9px;font-weight:600;margin-top:2px;}'
+    + 'table.ck{width:100%;border-collapse:collapse;}'
+    + 'table.ck th{background:#1B2A4A;color:#fff;font-size:9.5px;font-weight:700;padding:5px 8px;text-align:center;border:1.5px solid #1B2A4A;}'
+    + 'table.ck th:first-child{text-align:left;}'
+    + '.ft{margin-top:10px;font-size:8.5px;color:#9CA3AF;text-align:right;border-top:1px solid #E5E7EB;padding-top:6px;}'
+    + '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}tr{page-break-inside:avoid;}}'
+    + '</style></head><body>'
+    + '<div class="dh">'
+    + '<div class="dt"><h1>작업장 순회 점검표</h1><p>부민병원 안전관리 | 생성: ' + nowStr + '</p></div>'
+    + '<table class="at"><tr>'
+    + '<td style="border:1.5px solid #1B2A4A;background:#1B2A4A;color:#fff;font-size:9px;font-weight:700;padding:4px 8px;text-align:center;vertical-align:middle;writing-mode:vertical-rl;letter-spacing:2px;">결&nbsp;재</td>'
+    + approvalCell('검 사 자', inspector, sigIUrl)
+    + approvalCell('관리감독자', manager, sigMUrl)
+    + approvalCell('경 영 진', '', '')
+    + '</tr></table>'
+    + '</div>'
+    + '<div class="mb">'
+    + '<div class="mc"><div class="lb">부 서</div><div class="vl">' + k + '</div></div>'
+    + '<div class="mc"><div class="lb">점검일</div><div class="vl">' + date + '</div></div>'
+    + '<div class="mc"><div class="lb">관리감독자</div><div class="vl">' + manager + '</div></div>'
+    + '<div class="mc"><div class="lb">검 사 자</div><div class="vl">' + inspector + '</div></div>'
+    + '</div>'
+    + '<div class="sb2">'
+    + '<div class="sc" style="background:#F0FFF4;border-color:#2F9E44;"><div class="sv" style="color:#2F9E44;">' + good + '</div><div class="sl" style="color:#2F9E44;">양 호</div></div>'
+    + '<div class="sc" style="background:#FFFBEB;border-color:#E67700;"><div class="sv" style="color:#E67700;">' + impr + '</div><div class="sl" style="color:#E67700;">개선필요</div></div>'
+    + '<div class="sc" style="background:#FFF5F5;border-color:#C92A2A;"><div class="sv" style="color:#C92A2A;">' + na + '</div><div class="sl" style="color:#C92A2A;">미 해 당</div></div>'
+    + '</div>'
+    + '<table class="ck">'
+    + '<tr><th style="width:55%;text-align:left;">점 검 사 항</th><th style="width:9%;">양호</th><th style="width:9%;">개선</th><th style="width:9%;">미해당</th><th style="width:18%;text-align:left;">개선요망사항</th></tr>'
+    + tableRows
+    + '</table>'
+    + '<div class="ft">부민병원 작업장 순회 점검 시스템 | 제출: ' + nowStr + '</div>'
+    + '</body></html>';
+
+  return html;
+}
+
+function submitReport() {
+  var k = getKey();
+  var date = document.getElementById('inDate').value;
+  var manager = document.getElementById('inManager').value || '-';
+  var inspector = document.getElementById('inInspector').value || '-';
+  var sum = getSummary();
+  var good = sum.good, impr = sum.impr, na = sum.na, lines = sum.lines;
+
+  if (!date) { showToast('점검일을 입력해주세요'); return; }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '전송 중...';
+
+  var improveLines = lines.filter(function(l) { return l.indexOf('개선필요') >= 0; });
+  var improveItems = improveLines.map(function(l, i) {
+    var m = l.match(/\] (.+?) :/);
+    return (i + 1) + '. ' + (m ? m[1] : l);
+  }).join('\n');
+
+  var message = '[ 작업장 순회 점검 제출 ]\n\n'
+    + '부서: ' + k + '\n'
+    + '점검일: ' + date + '\n'
+    + '관리감독자: ' + manager + '\n'
+    + '검사자: ' + inspector + '\n\n'
+    + '결과: 양호 ' + good + '건 / 개선필요 ' + impr + '건 / 미해당 ' + na + '건\n'
+    + (improveItems ? '\n[ 개선 필요 항목 ]\n' + improveItems + '\n' : '')
+    + '\n제출: ' + new Date().toLocaleString('ko-KR');
+
+  var pdfHtml = buildPdfHtml();
+
+  var payload = JSON.stringify({
+    dept: k, date: date, manager: manager, inspector: inspector,
+    good: good, impr: impr, na: na, improveItems: improveItems, pdfHtml: pdfHtml
+  });
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload
+  }).then(function() {
+    emailjs.init(EMAILJS_KEY);
+    return emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+      subject: '[부민병원 작업장순회점검표] [점검 제출] ' + k + ' ' + date,
+      message: message
+    });
+  }).then(function() {
+    saveRecord();
+    showToast('제출 완료! 메일이 발송되었습니다 ✓', 3000);
+    setTimeout(function() {
+      var printWin = window.open('', '_blank', 'width=900,height=700');
+      if (printWin) {
+        printWin.document.write(pdfHtml);
+        printWin.document.close();
+        printWin.focus();
+        printWin.print();
+      }
+    }, 1000);
+  }).catch(function(err) {
+    console.error(err);
+    showToast('전송 오류가 발생했습니다. 다시 시도해주세요.');
+  }).finally(function() {
+    btn.disabled = false;
+    btn.innerHTML = '📤 제출하기';
+  });
+}
+
+function renderHist() {
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('wsi_records') || '[]'); } catch(e) {}
+  var el = document.getElementById('histList');
+  if (!records.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📂</div>저장된 점검 이력이 없습니다</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    html += '<div class="hist-card" onclick="loadRecord(' + r.ts + ')">'
+      + '<div class="hist-top"><div class="hist-dept">🏢 ' + r.dept + '</div><div class="hist-date">' + r.date + '</div></div>'
+      + '<div class="hist-badges">'
+      + '<span class="badge g">양호 ' + r.good + '건</span>'
+      + '<span class="badge i">개선 ' + r.impr + '건</span>'
+      + '<span class="badge n">미해당 ' + r.na + '건</span>'
+      + (r.manager ? '<span class="badge d">' + r.manager + '</span>' : '')
+      + '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function loadRecord(ts) {
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('wsi_records') || '[]'); } catch(e) {}
+  var r = null;
+  for (var i = 0; i < records.length; i++) {
+    if (records[i].ts === ts) { r = records[i]; break; }
+  }
+  if (!r) return;
+  document.getElementById('deptSel').value = r.dept;
+  document.getElementById('inDate').value = r.date;
+  document.getElementById('inManager').value = r.manager || '';
+  document.getElementById('inInspector').value = r.inspector || '';
+  state[r.dept] = { results: r.results || {}, notes: r.notes || {} };
+  updateSigName('Manager');
+  updateSigName('Inspector');
+  switchTab('check');
+  document.getElementById('inDept').value = r.dept;
+  renderChecks();
+}
+
+function renderStat() {
+  var records = [];
+  try { records = JSON.parse(localStorage.getItem('wsi_records') || '[]'); } catch(e) {}
+  var sc = document.getElementById('statsCards');
+  var ds = document.getElementById('deptStats');
+  if (!records.length) {
+    sc.innerHTML = '';
+    ds.innerHTML = '<div class="empty"><div class="empty-icon">📊</div>데이터가 없습니다</div>';
+    return;
+  }
+  var tG = 0, tI = 0, tN = 0;
+  for (var i = 0; i < records.length; i++) { tG += records[i].good||0; tI += records[i].impr||0; tN += records[i].na||0; }
+  sc.innerHTML = '<div class="stat-card"><div class="stat-val">' + records.length + '</div><div class="stat-lbl">총 점검 횟수</div></div>'
+    + '<div class="stat-card"><div class="stat-val g">' + tG + '</div><div class="stat-lbl">양호</div></div>'
+    + '<div class="stat-card"><div class="stat-val i">' + tI + '</div><div class="stat-lbl">개선 필요</div></div>'
+    + '<div class="stat-card"><div class="stat-val n">' + tN + '</div><div class="stat-lbl">미해당</div></div>';
+
+  var byDept = {};
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    if (!byDept[r.dept]) byDept[r.dept] = { count:0, good:0, impr:0 };
+    byDept[r.dept].count++;
+    byDept[r.dept].good += r.good||0;
+    byDept[r.dept].impr += r.impr||0;
+  }
+  var dhtml = '<div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--navy);">부서별 양호율</div>';
+  var entries = Object.keys(byDept).map(function(k) { return [k, byDept[k]]; });
+  entries.sort(function(a,b) { return b[1].count - a[1].count; });
+  for (var i = 0; i < entries.length; i++) {
+    var dept = entries[i][0], d = entries[i][1];
+    var total = d.good + d.impr;
+    var pct = total > 0 ? Math.round(d.good / total * 100) : 0;
+    dhtml += '<div class="dept-stat">'
+      + '<div class="dept-stat-top"><span class="dept-stat-name">' + dept + ' <span style="color:var(--gray-400);font-weight:400;">(' + d.count + '회)</span></span><span class="dept-stat-pct">' + pct + '%</span></div>'
+      + '<div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%"></div></div>'
+      + '<div class="dept-stat-sub">양호 ' + d.good + '건 / 개선 ' + d.impr + '건</div>'
+      + '</div>';
+  }
+  ds.innerHTML = dhtml;
+}
+
+function switchTab(tab) {
+  var tabs = ['check', 'hist', 'stat'];
+  for (var i = 0; i < tabs.length; i++) {
+    var t = tabs[i];
+    document.getElementById('view-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tab-' + t).className = 'tab' + (t === tab ? ' active' : '');
+  }
+  if (tab === 'hist') renderHist();
+  if (tab === 'stat') renderStat();
+}
+
+init();
+</script>
+</body>
+</html>
